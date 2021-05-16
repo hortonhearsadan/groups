@@ -1,5 +1,4 @@
 use crate::operator::Operator;
-use itertools::Itertools;
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -38,10 +37,13 @@ impl<T: Operator<T> + Eq + Hash> Group<T> {
     }
 
     fn is_associative(elements: &HashSet<T>) -> bool {
-        for comb in elements.iter().combinations(2) {
-            let (x, y) = (comb[0], comb[1]);
-            if x.operate(y) != y.operate(x) {
-                return false;
+        for x in elements {
+            for y in elements {
+                for z in elements {
+                    if (x.operate(y)).operate(z) != x.operate(&y.operate(z)) {
+                        return false;
+                    }
+                }
             }
         }
         true
@@ -49,7 +51,7 @@ impl<T: Operator<T> + Eq + Hash> Group<T> {
 
     fn has_identity(elements: &HashSet<T>) -> (bool, Option<&T>) {
         'outer: for x in elements {
-            'inner: for y in elements {
+            for y in elements {
                 if &x.operate(y) != y {
                     continue 'outer;
                 }
