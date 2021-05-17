@@ -2,11 +2,11 @@ use crate::operator::Operator;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-struct Group<T> {
-    elements: HashSet<T>,
+pub struct Group<'a, T> {
+    elements: &'a HashSet<T>,
 }
 
-impl<T: Operator<T> + Eq + Hash> Group<T> {
+impl<'b, T: 'b + Operator<T> + Eq + Hash> Group<'b, T> {
     // fn from_elements(elements: HashSet<T>) -> Group<T> {
     //     if Group<T>.is_a_group(&elements):
     //         Group<T>{elements}
@@ -89,11 +89,50 @@ impl<T: Operator<T> + Eq + Hash> Group<T> {
     }
 }
 
+pub struct GroupBuilder<'a, T> {
+    elements: &'a HashSet<T>,
+    check_associative: bool,
+}
+
+impl<'a, T: Operator<T> + Eq + Hash> GroupBuilder<'a, T> {
+    pub fn new(elements: &HashSet<T>) -> GroupBuilder<T> {
+        GroupBuilder {
+            elements,
+            check_associative: true,
+        }
+    }
+
+    pub fn check_associativity(mut self, check: bool) -> GroupBuilder<'a, T> {
+        self.check_associative = check;
+        self
+    }
+
+    pub fn build(&self) -> Group<T> {
+        if self.check_associative {
+            if Group::is_a_group(self.elements) {
+                Group {
+                    elements: self.elements,
+                }
+            } else {
+                panic!("elements and operator do not form a group")
+            }
+        } else if Group::is_closed(self.elements)
+            && Group::has_identity(self.elements).0
+            && Group::has_inverse(self.elements).0
+        {
+            Group {
+                elements: self.elements,
+            }
+        } else {
+            panic!("elements and operator do not form a group")
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_group {
     use crate::group::Group;
     use crate::operator::{Operator, TestStruct};
-    use itertools::Itertools;
     use std::collections::HashSet;
 
     #[test]
@@ -162,5 +201,42 @@ mod test_group {
         for x in inverses {
             assert!(&actual_vec.contains(&x));
         }
+    }
+
+    #[test]
+    fn test_mod_12_is_a_group() {
+        let elements: HashSet<TestStruct<u32>> = (0..12).map(|x| TestStruct { x }).collect();
+        assert!(Group::is_a_group(&elements))
+    }
+
+    #[test]
+    fn test_mod_12_skipping_odd_is_a_group() {
+        let elements: HashSet<TestStruct<u32>> = (&[0, 2, 4, 6, 8, 10])
+            .into_iter()
+            .map(|x| TestStruct { x: *x as u32 })
+            .collect();
+        assert!(Group::is_a_group(&elements))
+    }
+
+    #[test]
+    fn test_mod_12_larger_set_is_not_a_group() {
+        let elements: HashSet<TestStruct<u32>> = (0..15).map(|x| TestStruct { x }).collect();
+        assert!(!Group::has_identity(&elements).0)
+    }
+}
+
+#[cfg(test)]
+mod test_group_builder {
+    use crate::group::GroupBuilder;
+    use crate::operator::{Operator, TestStruct};
+    use std::cmp::Ordering::Greater;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_mod_12_is_a_group() {
+        let elements: HashSet<TestStruct<u32>> = (0..12).map(|x| TestStruct { x }).collect();
+        let group = GroupBuilder::new(&elements)
+            .check_associativity(true)
+            .build();
     }
 }
