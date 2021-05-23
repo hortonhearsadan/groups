@@ -1,5 +1,5 @@
 [package]
-name = "groups"
+name = "Groups"
 version = "0.1.0"
 authors = ["dan <dancrhorton@gmail.com>"]
 edition = "2018"
