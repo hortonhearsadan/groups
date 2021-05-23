@@ -4,6 +4,7 @@ use std::hash::Hash;
 
 use crate::axioms::*;
 use itertools::Itertools;
+use std::mem::take;
 
 pub struct Group<'a, T> {
     elements: &'a HashSet<T>,
@@ -17,6 +18,11 @@ impl<'b, T: 'b + Operator<T> + Eq + Hash> Group<'b, T> {
             x.first().unwrap().operate(x.last().unwrap())
                 == x.last().unwrap().operate(x.first().unwrap())
         })
+    }
+
+    fn possible_orders_of_subgroups(&self) -> Vec<u32> {
+        let n: u32 = self.elements.len() as u32;
+        (1..n + 1).filter(|x| n % x == 0).collect()
     }
 }
 
@@ -75,10 +81,27 @@ mod test_group_builder {
     use std::collections::HashSet;
 
     #[test]
-    fn test_mod_12_group_() {
+    fn test_mod_12_group() {
         let elements: HashSet<TestStruct<u32>> = (0..12).map(|x| TestStruct { x }).collect();
         let group = GroupBuilder::new(&elements).build();
 
         assert_eq!(group.identity, &TestStruct { x: 0 })
+    }
+    #[test]
+    fn test_mod_12_group_is_abelian() {
+        let elements: HashSet<TestStruct<u32>> = (0..12).map(|x| TestStruct { x }).collect();
+        let group = GroupBuilder::new(&elements).build();
+
+        assert!(group.is_abelian())
+    }
+    #[test]
+    fn test_mod_12_group_subgroup_orders() {
+        let elements: HashSet<TestStruct<u32>> = (0..12).map(|x| TestStruct { x }).collect();
+        let group = GroupBuilder::new(&elements).build();
+        println!("{:?}", &group.possible_orders_of_subgroups());
+        assert_eq!(
+            group.possible_orders_of_subgroups(),
+            vec![1, 2, 3, 4, 6, 12]
+        )
     }
 }
