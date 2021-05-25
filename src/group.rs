@@ -4,7 +4,6 @@ use std::hash::Hash;
 
 use crate::axioms::*;
 use itertools::Itertools;
-use std::mem::take;
 
 pub struct Group<'a, T> {
     elements: &'a HashSet<T>,
@@ -12,7 +11,7 @@ pub struct Group<'a, T> {
     identity: &'a T,
 }
 
-impl<'b, T: 'b + Operator<T> + Eq + Hash> Group<'b, T> {
+impl<'b, T: 'b + Operator<T> + Eq + Hash + Clone + Copy> Group<'b, T> {
     fn is_abelian(&self) -> bool {
         self.elements.iter().combinations(2).all(|x| {
             x.first().unwrap().operate(x.last().unwrap())
@@ -24,6 +23,35 @@ impl<'b, T: 'b + Operator<T> + Eq + Hash> Group<'b, T> {
         let n: u32 = self.elements.len() as u32;
         (1..n + 1).filter(|x| n % x == 0).collect()
     }
+
+    fn order(&self)-> usize {
+        self.elements.len()
+    }
+
+    // fn cyclic_subgroups(&self) -> Vec<Group<T>> {
+    //     let mut subsets = Vec::new();
+    //     for &x in self.elements {
+    //         let mut subelements = HashSet::new();
+    //         subelements.insert(x);
+    //         let mut e = x;
+    //         while  &e != self.identity {
+    //             e = e.operate(&x);
+    //             subelements.insert(e);
+    //         }
+    //         subsets.push(subelements)
+    //
+    //     }
+    //
+    //     let mut subgroups = Vec::new();
+    //     for s in &subsets {
+    //         if self.order() % s.len() != 0 {
+    //             continue
+    //         }
+    //         subgroups.push(GroupBuilder::new(s).check_associativity(false).build())
+    //     }
+    //     subgroups
+    // }
+
 }
 
 pub struct GroupBuilder<'a, T> {
